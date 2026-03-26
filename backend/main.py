@@ -29,17 +29,20 @@ async def task_completion_worker():
         try:
             db = SessionLocal()
             try:
-                now = datetime.now(timezone.utc)
+                # Use naive local time — PostgreSQL TIMESTAMP WITHOUT TIME ZONE
+                # stores datetimes in the DB server's local timezone (naive).
+                # Comparing two naive local datetimes gives a correct elapsed time.
+                now = datetime.now()
                 running = db.query(Task).filter(Task.status == "running").all()
 
                 released = []
                 for task in running:
                     if task.start_time is None or task.execution_duration is None:
                         continue
-                    # Normalise to UTC-aware so subtraction works regardless of DB tz storage
                     start = task.start_time
-                    if start.tzinfo is None:
-                        start = start.replace(tzinfo=timezone.utc)
+                    # Strip timezone info if present so subtraction stays naive
+                    if start.tzinfo is not None:
+                        start = start.replace(tzinfo=None)
                     elapsed = (now - start).total_seconds()
 
                     if elapsed >= task.execution_duration:
