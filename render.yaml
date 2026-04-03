@@ -2,7 +2,6 @@ databases:
   - name: cloud-scheduler-db
     plan: free
     databaseName: cloud_scheduler
-    user: postgres
 
 services:
   - type: web
